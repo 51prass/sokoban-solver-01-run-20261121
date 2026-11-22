@@ -1,7 +1,6 @@
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
 const I=process.env.MAKEFUN_INPUT_DIR??'/input',O=process.env.MAKEFUN_OUTPUT_DIR??'/output';
-const D = [[0, -1], [0, 1], [-1, 0], [1, 0]], U = 'udlr', V = 'UDLR', N = 250000;
+const U = 'udlr', V = 'UDLR', N = 250000; let Q;
 function p(t) {
   const r = t.split('\n').filter(x => x), h = r.length;
   let w = 0; r.forEach(x => w = Math.max(w, x.length));
@@ -9,20 +8,22 @@ function p(t) {
   let y = -1;
   r.forEach((s, j) => { for (let x = 0; x < s.length; x++) { const c = s[x], i = j * w + x; if (c == '#') continue; a[i] = 0; if ('.*+'.includes(c)) g.push(i); if ('$*'.includes(c)) b.push(i); if ('@+'.includes(c)) y = i; } });
   for (let j = 0; j < h; j++) for (let x = 0; x < w; x++) if (!j || !x || j == h - 1 || x == w - 1) a[j * w + x] = 1;
+  Q = [-w, w, -1, 1];
   return { w, h, a, g, b: b.sort((x, z) => x - z), y };
 }
 function lv(L) {
-  const v = new Uint8Array(L.a.length), q = [...L.g];
+  const A = L.a, v = new Uint8Array(A.length), q = [...L.g];
   for (const g of L.g) v[g] = 1;
   for (let i = 0; i < q.length; i++) for (let k = 0; k < 4; k++) {
-    const d = D[k][1] * L.w + D[k][0], y = q[i] - d;
-    if (!L.a[y] && !L.a[y - d] && !v[y]) { v[y] = 1; q.push(y); }
+    const d = Q[k], y = q[i] - d;
+    if (!A[y] && !A[y - d] && !v[y]) { v[y] = 1; q.push(y); }
   }
   return v;
 }
 function rg(L, occ, f, sn, st, k) {
+  const A = L.a;
   let lo = f, n = 0; k[n++] = f; sn[f] = st;
-  while (n) { const x = k[--n]; if (x < lo) lo = x; for (let i = 0; i < 4; i++) { const q = x + D[i][1] * L.w + D[i][0]; if (!L.a[q] && !occ[q] && sn[q] != st) { sn[q] = st; k[n++] = q; } } }
+  while (n) { const x = k[--n]; if (x < lo) lo = x; for (let i = 0; i < 4; i++) { const q = x + Q[i]; if (!A[q] && !occ[q] && sn[q] != st) { sn[q] = st; k[n++] = q; } } }
   return lo;
 }
 function fr(L, occ, go, t) {
@@ -35,9 +36,9 @@ function fr(L, occ, go, t) {
 }
 function wk(L, occ, f, t) {
   if (f == t) return '';
-  const pv = new Int32Array(L.a.length).fill(-1), hw = new Array(L.a.length), q = [f];
+  const A = L.a, pv = new Int32Array(A.length).fill(-1), hw = new Array(A.length), q = [f];
   pv[f] = f;
-  for (let i = 0; i < q.length; i++) { const x = q[i]; if (x == t) break; for (let k = 0; k < 4; k++) { const s = x + D[k][1] * L.w + D[k][0]; if (L.a[s] || occ[s] || pv[s] >= 0) continue; pv[s] = x; hw[s] = U[k]; q.push(s); } }
+  for (let i = 0; i < q.length; i++) { const x = q[i]; if (x == t) break; for (let k = 0; k < 4; k++) { const s = x + Q[k]; if (A[s] || occ[s] || pv[s] >= 0) continue; pv[s] = x; hw[s] = U[k]; q.push(s); } }
   if (pv[t] < 0) throw new Error('no walk');
   let s = ''; for (let x = t; x != f; x = pv[x]) s = hw[x] + s;
   return s;
@@ -65,7 +66,7 @@ function S(L) {
   for (const b of L.b) occ[b] = 0;
   bg.set(key(L.b, lo0), 0);
   const h0 = hu(L.b); pu([h0, h0, 0, 0]);
-  let ct = 1, fd = L.b.every(b => go[b]) ? 0 : -1;
+  let ct = 1, fd = h0 ? -1 : 0;
   while (hp.length && fd < 0) {
     const s = po()[3], bs = B[s], gg = G[s];
     for (const b of bs) occ[b] = 1;
@@ -74,20 +75,20 @@ function S(L) {
     for (let i = 0; i < bs.length && fd < 0; i++) {
       const bx = bs[i];
       for (let di = 0; di < 4; di++) {
-        const d = D[di][1] * w + D[di][0], t = bx + d;
+        const d = Q[di], t = bx + d;
         if (sn[bx - d] != hr || a[t] || occ[t] || !v[t]) continue;
         occ[bx] = 0; occ[t] = 1;
         const fz = fr(L, occ, go, t);
         let ky = -1, nx = null;
         if (!fz) { nx = bs.slice(); nx[i] = t; nx.sort((x, z) => x - z); ky = key(nx, rg(L, occ, bx, mk, ++st, k)); }
         occ[t] = 0; occ[bx] = 1;
-        if (fz || bg.has(ky) && bg.get(ky) <= gg + 1) continue;
+        if (fz || bg.get(ky) <= gg + 1) continue;
         if (B.length >= N) { for (const x of bs) occ[x] = 0; return null; }
         bg.set(ky, gg + 1);
         const ns = B.length, hh = hu(nx);
         B.push(nx); Y.push(bx); G.push(gg + 1); pa.push(s); pb.push(bx); pd.push(di);
         pu([gg + 1 + hh, hh, ct++, ns]);
-        if (nx.every(b => go[b])) { fd = ns; break; }
+        if (!hh) { fd = ns; break; }
       }
     }
     for (const x of bs) occ[x] = 0;
@@ -98,7 +99,7 @@ function S(L) {
   path.reverse();
   let m = '', pl = L.y, bs = L.b;
   for (const s of path) {
-    const f = pb[s], di = pd[s], d = D[di][1] * w + D[di][0];
+    const f = pb[s], di = pd[s], d = Q[di];
     for (const b of bs) occ[b] = 1;
     m += wk(L, occ, pl, f - d);
     for (const b of bs) occ[b] = 0;
@@ -114,7 +115,7 @@ function rm(L) {
   for (let s = 0; s < a.length; s++) {
     if (a[s] || cu[s] || pt[s] >= 0) continue;
     const sq = [s]; pt[s] = R.length;
-    for (let i = 0; i < sq.length; i++) for (let k = 0; k < 4; k++) { const q = sq[i] + D[k][1] * w + D[k][0]; if (!a[q] && !cu[q] && pt[q] < 0) { pt[q] = R.length; sq.push(q); } }
+    for (let i = 0; i < sq.length; i++) for (let k = 0; k < 4; k++) { const q = sq[i] + Q[k]; if (!a[q] && !cu[q] && pt[q] < 0) { pt[q] = R.length; sq.push(q); } }
     R.push({ b: [], g: [] });
   }
   for (const x of b) R[pt[x]].b.push(x);
@@ -136,6 +137,6 @@ function solve(t) {
   return m;
 }
 for (const id of readdirSync(I).sort()) {
-  mkdirSync(join(O, id), { recursive: true });
-  writeFileSync(join(O, id, 'solution.txt'), solve(readFileSync(join(I, id, 'level.txt'), 'utf8')) + '\n');
+  mkdirSync(O + '/' + id, { recursive: true });
+  writeFileSync(O + '/' + id + '/solution.txt', solve(readFileSync(I + '/' + id + '/level.txt', 'utf8')) + '\n');
 }
